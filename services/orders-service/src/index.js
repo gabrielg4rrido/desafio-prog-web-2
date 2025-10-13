@@ -4,6 +4,8 @@ import fetch from "node-fetch";
 import { nanoid } from "nanoid";
 import { createChannel } from "./amqp.js";
 import events from "../../../common/events.js";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./swagger.js";
 
 const { ROUTING_KEYS } = events;
 
@@ -25,6 +27,14 @@ const ROUTING_KEY_USER_CREATED =
 const orders = new Map();
 // In-memory cache de usuários (preenchido por eventos)
 const userCache = new Map();
+
+// Docs endpoints
+app.get("/docs.json", (req, res) => res.json(swaggerSpec));
+app.use(
+  "/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, { explorer: true })
+);
 
 let amqp = null;
 (async () => {
@@ -93,11 +103,9 @@ app.post("/", async (req, res) => {
     );
     // fallback: usar cache populado por eventos (assíncrono)
     if (!userCache.has(userId)) {
-      return res
-        .status(503)
-        .json({
-          error: "users-service indisponível e usuário não encontrado no cache",
-        });
+      return res.status(503).json({
+        error: "users-service indisponível e usuário não encontrado no cache",
+      });
     }
   }
 

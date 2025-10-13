@@ -3,6 +3,8 @@ import morgan from "morgan";
 import { nanoid } from "nanoid";
 import { createChannel } from "./amqp.js";
 import events from "../../../common/events.js";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./swagger.js";
 
 const { ROUTING_KEYS } = events;
 const app = express();
@@ -16,6 +18,14 @@ const EXCHANGE = process.env.EXCHANGE || "app.topic";
 
 // In-memory "DB"
 const users = new Map();
+
+// Docs endpoints
+app.get("/docs.json", (req, res) => res.json(swaggerSpec));
+app.use(
+  "/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, { explorer: true })
+);
 
 let amqp = null;
 (async () => {
