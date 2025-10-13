@@ -1,11 +1,11 @@
 FROM node:20-alpine
-WORKDIR /app
+WORKDIR /app/services/orders-service
 
 COPY services/orders-service/package.json ./package.json
 RUN npm install --only=production
 
 COPY services/orders-service/src ./src
-COPY common ./common
+COPY common /app/common
 
 ENV PORT=3002
 EXPOSE 3002
