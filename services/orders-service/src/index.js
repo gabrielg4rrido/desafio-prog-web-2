@@ -28,7 +28,6 @@ const orders = new Map();
 // In-memory cache de usuários (preenchido por eventos)
 const userCache = new Map();
 
-// Docs endpoints
 app.get("/docs.json", (req, res) => res.json(swaggerSpec));
 app.use(
   "/docs",

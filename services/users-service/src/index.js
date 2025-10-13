@@ -19,7 +19,6 @@ const EXCHANGE = process.env.EXCHANGE || "app.topic";
 // In-memory "DB"
 const users = new Map();
 
-// Docs endpoints
 app.get("/docs.json", (req, res) => res.json(swaggerSpec));
 app.use(
   "/docs",

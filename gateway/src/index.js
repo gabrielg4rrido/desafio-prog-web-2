@@ -12,13 +12,9 @@ const PORT = process.env.PORT || 3000;
 const USERS_URL = process.env.USERS_URL || "http://localhost:3001";
 const ORDERS_URL = process.env.ORDERS_URL || "http://localhost:3002";
 
-// Health
 app.get("/health", (req, res) => res.json({ ok: true, service: "gateway" }));
-
-// Gateway's own Swagger documentation
 app.get("/docs/gateway.json", (req, res) => res.json(swaggerSpec));
 
-// Swagger aggregation
 app.use(
   "/docs/users.json",
   createProxyMiddleware({
