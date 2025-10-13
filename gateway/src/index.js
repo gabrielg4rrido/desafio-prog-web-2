@@ -20,7 +20,7 @@ app.use(
   createProxyMiddleware({
     target: USERS_URL,
     changeOrigin: true,
-    pathRewrite: { "^/docs/users.json": "/docs.json" },
+    pathRewrite: () => "/docs.json",
   })
 );
 
@@ -29,7 +29,7 @@ app.use(
   createProxyMiddleware({
     target: ORDERS_URL,
     changeOrigin: true,
-    pathRewrite: { "^/docs/orders.json": "/docs.json" },
+    pathRewrite: () => "/docs.json",
   })
 );
 

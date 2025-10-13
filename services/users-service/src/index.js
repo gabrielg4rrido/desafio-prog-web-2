@@ -5,11 +5,13 @@ import { createChannel } from "./amqp.js";
 import events from "../../../common/events.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./swagger.js";
+import cors from "cors";
 
 const { ROUTING_KEYS } = events;
 const app = express();
 app.use(express.json());
 app.use(morgan("dev"));
+app.use(cors({ origin: "http://localhost:3000" }));
 
 const PORT = process.env.PORT || 3001;
 const RABBITMQ_URL =
