@@ -8,8 +8,10 @@
   },
   "dependencies": {
     "amqplib": "^0.10.4",
+    "cors": "^2.8.5",
     "express": "^4.19.2",
     "morgan": "^1.10.0",
-    "nanoid": "^5.0.7"
+    "nanoid": "^5.0.7",
+    "swagger-ui-express": "^5.0.1"
   }
 }
