@@ -5,6 +5,9 @@ import { nanoid } from "nanoid";
 import { PrismaClient } from "@prisma/client";
 import { createChannel } from "./amqp.js";
 import events from "../../../common/events.js";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./swagger.js";
+import cors from "cors";
 
 const prisma = new PrismaClient();
 const { ROUTING_KEYS } = events;
@@ -12,6 +15,7 @@ const { ROUTING_KEYS } = events;
 const app = express();
 app.use(express.json());
 app.use(morgan("dev"));
+app.use(cors({ origin: "http://localhost:3000" }));
 
 const PORT = process.env.PORT || 3002;
 const USERS_BASE_URL = process.env.USERS_BASE_URL || "http://localhost:3001";
@@ -25,6 +29,13 @@ const ROUTING_KEY_USER_CREATED =
 
 // In-memory cache de usuários (preenchido por eventos)
 const userCache = new Map();
+
+app.get("/docs.json", (req, res) => res.json(swaggerSpec));
+app.use(
+  "/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, { explorer: true })
+);
 
 let amqp = null;
 (async () => {
@@ -108,11 +119,9 @@ app.post("/", async (req, res) => {
     );
     // fallback: usar cache populado por eventos (assíncrono)
     if (!userCache.has(userId)) {
-      return res
-        .status(503)
-        .json({
-          error: "users-service indisponível e usuário não encontrado no cache",
-        });
+      return res.status(503).json({
+        error: "users-service indisponível e usuário não encontrado no cache",
+      });
     }
   }
 
