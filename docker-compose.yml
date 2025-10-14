@@ -9,23 +9,37 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
 
+  postgres:
+    image: postgres:16
+    container_name: ms_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
   users:
     build:
-      context: .                     # << agora é a raiz do projeto
+      context: .
       dockerfile: ./services/users-service/Dockerfile
     container_name: ms_users
     environment:
       PORT: 3001
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       EXCHANGE: app.topic
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app?schema=users
     depends_on:
       - rabbitmq
+      - postgres
     ports:
       - "3001:3001"
 
   orders:
     build:
-      context: .                     # << agora é a raiz do projeto
+      context: .
       dockerfile: ./services/orders-service/Dockerfile
     container_name: ms_orders
     environment:
@@ -36,9 +50,11 @@ services:
       EXCHANGE: app.topic
       QUEUE: orders.q
       ROUTING_KEY_USER_CREATED: user.created
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app?schema=orders
     depends_on:
       - rabbitmq
       - users
+      - postgres
     ports:
       - "3002:3002"
 
@@ -56,3 +72,6 @@ services:
       - orders
     ports:
       - "3000:3000"
+
+volumes:
+  pgdata: {}
