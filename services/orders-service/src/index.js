@@ -2,9 +2,11 @@ import express from "express";
 import morgan from "morgan";
 import fetch from "node-fetch";
 import { nanoid } from "nanoid";
+import { PrismaClient } from "@prisma/client";
 import { createChannel } from "./amqp.js";
 import events from "../../../common/events.js";
 
+const prisma = new PrismaClient();
 const { ROUTING_KEYS } = events;
 
 const app = express();
@@ -21,8 +23,6 @@ const QUEUE = process.env.QUEUE || "orders.q";
 const ROUTING_KEY_USER_CREATED =
   process.env.ROUTING_KEY_USER_CREATED || ROUTING_KEYS.USER_CREATED;
 
-// In-memory "DB"
-const orders = new Map();
 // In-memory cache de usuários (preenchido por eventos)
 const userCache = new Map();
 
@@ -54,10 +54,25 @@ let amqp = null;
   }
 })();
 
-app.get("/health", (req, res) => res.json({ ok: true, service: "orders" }));
+app.get("/health", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ ok: true, service: "orders", db: "ok" });
+  } catch (e) {
+    res.status(503).json({ ok: false, service: "orders", db: "down" });
+  }
+});
 
-app.get("/", (req, res) => {
-  res.json(Array.from(orders.values()));
+app.get("/", async (req, res) => {
+  try {
+    const list = await prisma.order.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(list);
+  } catch (e) {
+    console.error("[orders] list error:", e.message);
+    res.status(500).json({ error: "internal" });
+  }
 });
 
 async function fetchWithTimeout(url, ms) {
@@ -108,33 +123,52 @@ app.post("/", async (req, res) => {
     items,
     total,
     status: "created",
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(),
   };
-  orders.set(id, order);
 
-  // (Opcional) publicar evento order.created
   try {
-    if (amqp?.ch) {
-      amqp.ch.publish(
-        EXCHANGE,
-        ROUTING_KEYS.ORDER_CREATED,
-        Buffer.from(JSON.stringify(order)),
-        { persistent: true }
-      );
-      console.log(
-        "[orders] published event:",
-        ROUTING_KEYS.ORDER_CREATED,
-        order.id
-      );
-    }
-  } catch (err) {
-    console.error("[orders] publish error:", err.message);
-  }
+    const created = await prisma.order.create({ data: order });
 
-  res.status(201).json(order);
+    // (Opcional) publicar evento order.created
+    try {
+      if (amqp?.ch) {
+        amqp.ch.publish(
+          EXCHANGE,
+          ROUTING_KEYS.ORDER_CREATED,
+          Buffer.from(JSON.stringify(created)),
+          { persistent: true }
+        );
+        console.log(
+          "[orders] published event:",
+          ROUTING_KEYS.ORDER_CREATED,
+          created.id
+        );
+      }
+    } catch (err) {
+      console.error("[orders] publish error:", err.message);
+    }
+
+    res.status(201).json(created);
+  } catch (e) {
+    console.error("[orders] create error:", e.message);
+    res.status(500).json({ error: "internal" });
+  }
 });
 
 app.listen(PORT, () => {
   console.log(`[orders] listening on http://localhost:${PORT}`);
   console.log(`[orders] users base url: ${USERS_BASE_URL}`);
+});
+
+process.on("SIGINT", async () => {
+  try {
+    await prisma.$disconnect();
+  } catch {}
+  process.exit(0);
+});
+process.on("SIGTERM", async () => {
+  try {
+    await prisma.$disconnect();
+  } catch {}
+  process.exit(0);
 });
