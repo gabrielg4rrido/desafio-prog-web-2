@@ -1,9 +1,9 @@
 const swaggerSpec = {
   openapi: "3.0.3",
   info: {
-    title: "Orders Service",
+    title: "Orders Service API",
     version: "1.0.0",
-    description: "Microserviço para gerenciamento de pedidos",
+    description: "Microserviço de gerenciamento de pedidos",
   },
   servers: [
     {
@@ -15,7 +15,8 @@ const swaggerSpec = {
     "/health": {
       get: {
         summary: "Healthcheck",
-        description: "Verifica se o serviço está funcionando",
+        description:
+          "Verifica se o serviço e o banco de dados estão funcionando",
         tags: ["Health"],
         responses: {
           200: {
@@ -27,10 +28,14 @@ const swaggerSpec = {
                   properties: {
                     ok: { type: "boolean" },
                     service: { type: "string" },
+                    db: { type: "string" },
                   },
                 },
               },
             },
+          },
+          503: {
+            description: "Serviço indisponível",
           },
         },
       },
@@ -38,7 +43,7 @@ const swaggerSpec = {
     "/": {
       get: {
         summary: "Listar pedidos",
-        description: "Retorna todos os pedidos cadastrados",
+        description: "Retorna a lista de todos os pedidos cadastrados",
         tags: ["Orders"],
         responses: {
           200: {
@@ -47,16 +52,39 @@ const swaggerSpec = {
               "application/json": {
                 schema: {
                   type: "array",
-                  items: { $ref: "#/components/schemas/Order" },
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: { type: "string", example: "o_abc123" },
+                      userId: { type: "string", example: "u_abc123" },
+                      items: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            sku: { type: "string", example: "PROD-001" },
+                            qty: { type: "integer", example: 2 },
+                          },
+                        },
+                      },
+                      total: { type: "number", example: 299.99 },
+                      status: { type: "string", example: "created" },
+                      createdAt: { type: "string", format: "date-time" },
+                    },
+                  },
                 },
               },
             },
+          },
+          500: {
+            description: "Erro interno",
           },
         },
       },
       post: {
         summary: "Criar pedido",
-        description: "Cria um novo pedido no sistema",
+        description:
+          "Cria um novo pedido após validar o usuário (síncrono via HTTP) e publica evento order.created no RabbitMQ",
         tags: ["Orders"],
         requestBody: {
           required: true,
@@ -68,36 +96,24 @@ const swaggerSpec = {
                 properties: {
                   userId: {
                     type: "string",
-                    description: "ID do usuário que está fazendo o pedido",
                     example: "u_abc123",
+                    description: "ID do usuário que fez o pedido",
                   },
                   items: {
                     type: "array",
-                    description: "Lista de itens do pedido",
                     items: {
                       type: "object",
                       properties: {
-                        sku: {
-                          type: "string",
-                          description: "Código do produto",
-                          example: "PROD-001",
-                        },
-                        qty: {
-                          type: "integer",
-                          description: "Quantidade do produto",
-                          example: 2,
-                          minimum: 1,
-                        },
+                        sku: { type: "string", example: "PROD-001" },
+                        qty: { type: "integer", example: 2 },
                       },
-                      required: ["sku", "qty"],
                     },
-                    minItems: 1,
+                    description: "Lista de itens do pedido",
                   },
                   total: {
                     type: "number",
-                    description: "Valor total do pedido",
                     example: 299.99,
-                    minimum: 0,
+                    description: "Valor total do pedido",
                   },
                 },
               },
@@ -109,12 +125,31 @@ const swaggerSpec = {
             description: "Pedido criado com sucesso",
             content: {
               "application/json": {
-                schema: { $ref: "#/components/schemas/Order" },
+                schema: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string", example: "o_abc123" },
+                    userId: { type: "string", example: "u_abc123" },
+                    items: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          sku: { type: "string", example: "PROD-001" },
+                          qty: { type: "integer", example: 2 },
+                        },
+                      },
+                    },
+                    total: { type: "number", example: 299.99 },
+                    status: { type: "string", example: "created" },
+                    createdAt: { type: "string", format: "date-time" },
+                  },
+                },
               },
             },
           },
           400: {
-            description: "Requisição inválida",
+            description: "Dados inválidos ou usuário não encontrado",
             content: {
               "application/json": {
                 schema: {
@@ -127,7 +162,8 @@ const swaggerSpec = {
             },
           },
           503: {
-            description: "Dependência indisponível",
+            description:
+              "Users Service indisponível e usuário não encontrado no cache",
             content: {
               "application/json": {
                 schema: {
@@ -139,69 +175,10 @@ const swaggerSpec = {
               },
             },
           },
-        },
-      },
-    },
-  },
-  components: {
-    schemas: {
-      Order: {
-        type: "object",
-        properties: {
-          id: {
-            type: "string",
-            description: "ID único do pedido",
-            example: "o_xyz789",
-          },
-          userId: {
-            type: "string",
-            description: "ID do usuário que fez o pedido",
-            example: "u_abc123",
-          },
-          items: {
-            type: "array",
-            description: "Lista de itens do pedido",
-            items: {
-              type: "object",
-              properties: {
-                sku: {
-                  type: "string",
-                  description: "Código do produto",
-                  example: "PROD-001",
-                },
-                qty: {
-                  type: "integer",
-                  description: "Quantidade do produto",
-                  example: 2,
-                },
-              },
-            },
-          },
-          total: {
-            type: "number",
-            description: "Valor total do pedido",
-            example: 299.99,
-          },
-          status: {
-            type: "string",
-            description: "Status atual do pedido",
-            example: "created",
-            enum: [
-              "created",
-              "processing",
-              "shipped",
-              "delivered",
-              "cancelled",
-            ],
-          },
-          createdAt: {
-            type: "string",
-            format: "date-time",
-            description: "Data de criação do pedido",
-            example: "2025-10-13T10:30:00.000Z",
+          500: {
+            description: "Erro interno",
           },
         },
-        required: ["id", "userId", "items", "total", "status", "createdAt"],
       },
     },
   },
@@ -212,7 +189,7 @@ const swaggerSpec = {
     },
     {
       name: "Orders",
-      description: "Operações relacionadas aos pedidos",
+      description: "Operações de gerenciamento de pedidos",
     },
   ],
 };

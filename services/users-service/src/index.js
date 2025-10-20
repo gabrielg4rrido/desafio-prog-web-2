@@ -30,6 +30,14 @@ let amqp = null;
   }
 })();
 
+// Swagger endpoints
+app.get("/docs.json", (req, res) => res.json(swaggerSpec));
+app.use(
+  "/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, { explorer: true })
+);
+
 app.get("/health", async (req, res) => {
   try {
     // ping simples: consulta mínima
@@ -101,6 +109,7 @@ app.get("/:id", async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`[users] listening on http://localhost:${PORT}`);
+  console.log(`[users] swagger -> http://localhost:${PORT}/docs`);
 });
 
 process.on("SIGINT", async () => {
