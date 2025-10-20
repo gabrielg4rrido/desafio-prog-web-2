@@ -181,6 +181,84 @@ const swaggerSpec = {
         },
       },
     },
+    "/{id}/cancel": {
+      patch: {
+        summary: "Cancelar pedido",
+        description:
+          "Cancela um pedido existente e publica evento order.cancelled no RabbitMQ",
+        tags: ["Orders"],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            description: "ID do pedido a ser cancelado",
+            schema: {
+              type: "string",
+              example: "o_abc123",
+            },
+          },
+        ],
+        responses: {
+          200: {
+            description: "Pedido cancelado com sucesso",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string", example: "o_abc123" },
+                    userId: { type: "string", example: "u_abc123" },
+                    items: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          sku: { type: "string", example: "PROD-001" },
+                          qty: { type: "integer", example: 2 },
+                        },
+                      },
+                    },
+                    total: { type: "number", example: 299.99 },
+                    status: { type: "string", example: "cancelled" },
+                    createdAt: { type: "string", format: "date-time" },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "Pedido já está cancelado",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          404: {
+            description: "Pedido não encontrado",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          500: {
+            description: "Erro interno",
+          },
+        },
+      },
+    },
   },
   tags: [
     {

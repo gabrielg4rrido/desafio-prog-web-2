@@ -62,6 +62,13 @@ curl http://localhost:3000/users
 curl -X POST http://localhost:3000/orders \  -H "Content-Type: application/json" \  -d '{"userId":"u_1","items":[{"sku":"BOOK-123","qty":2}], "total": 120.50}'
 ```
 
+### Cancelar pedido (publica `order.cancelled`)
+
+```bash
+# Troque <orderId> pelo id retornado na criação do pedido (ex.: "o_abc123")
+curl -X PATCH http://localhost:3000/orders/<orderId>/cancel
+```
+
 ### Listar pedidos
 
 ```bash
@@ -133,11 +140,13 @@ microservices-node-lesson/
 
 - Isolamento por serviço: cada app com seu Dockerfile e variáveis de ambiente.
 
+- Eventos de cancelamento: order.cancelled é publicado e consumido pelo Users Service (exemplo didático).
+
 ---
 
 ## Exercícios
 
-- Implementar `order.cancelled` e `user.updated`.
+- Implementar `order.cancelled` e `user.updated` => order.cancelled implementado! ✅
 - Adicionar **persistência** (SQLite/Postgres via Prisma) por serviço => Persistência com Prisma + SQLite/Postgres por serviço. ✅
 - Criar **testes** (Jest/supertest) por serviço => Testes com Jest + supertest.
 - Adicionar **retry com backoff** para conexões AMQP/HTTP => Retries com backoff para AMQP/HTTP. ✅

@@ -164,6 +164,50 @@ app.post("/", async (req, res) => {
   }
 });
 
+app.patch("/:id/cancel", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const order = await prisma.order.findUnique({ where: { id } });
+
+    if (!order) {
+      return res.status(404).json({ error: "pedido não encontrado" });
+    }
+
+    if (order.status === "cancelled") {
+      return res.status(400).json({ error: "pedido já está cancelado" });
+    }
+
+    const cancelled = await prisma.order.update({
+      where: { id },
+      data: { status: "cancelled" },
+    });
+
+    try {
+      if (amqp?.ch) {
+        amqp.ch.publish(
+          EXCHANGE,
+          ROUTING_KEYS.ORDER_CANCELLED,
+          Buffer.from(JSON.stringify(cancelled)),
+          { persistent: true }
+        );
+        console.log(
+          "[orders] published event:",
+          ROUTING_KEYS.ORDER_CANCELLED,
+          cancelled.id
+        );
+      }
+    } catch (err) {
+      console.error("[orders] publish error:", err.message);
+    }
+
+    res.json(cancelled);
+  } catch (e) {
+    console.error("[orders] cancel error:", e.message);
+    res.status(500).json({ error: "internal" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`[orders] listening on http://localhost:${PORT}`);
   console.log(`[orders] users base url: ${USERS_BASE_URL}`);
