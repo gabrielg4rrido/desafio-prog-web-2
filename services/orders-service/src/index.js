@@ -167,6 +167,7 @@ app.post("/", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`[orders] listening on http://localhost:${PORT}`);
   console.log(`[orders] users base url: ${USERS_BASE_URL}`);
+  console.log(`[orders] swagger -> http://localhost:${PORT}/docs`);
 });
 
 process.on("SIGINT", async () => {

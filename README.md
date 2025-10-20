@@ -1,6 +1,7 @@
 # Microservices Node Lesson — REST + RabbitMQ
 
 Este projeto foi feito para **aula prática** mostrando uma arquitetura mínima de microserviços em Node.js com:
+
 - **API Gateway** (Express) — roteia chamadas síncronas para os serviços.
 - **Users Service** (Express) — CRUD de usuários; publica eventos em **RabbitMQ**.
 - **Orders Service** (Express) — cria pedidos; consome eventos do RabbitMQ e valida usuários via chamada síncrona.
@@ -35,6 +36,7 @@ client -> [API Gateway] --(HTTP)--> [Users Service]
 ```bash
 docker compose up --build
 ```
+
 Aguarde os containers subirem. A UI do RabbitMQ estará em: http://localhost:15672 (user: `guest`, pass: `guest`).
 
 ---
@@ -42,27 +44,43 @@ Aguarde os containers subirem. A UI do RabbitMQ estará em: http://localhost:156
 ## Testes rápidos (curl)
 
 ### Criar usuário
+
 ```bash
 curl -X POST http://localhost:3000/users \  -H "Content-Type: application/json" \  -d '{"name":"Bruno Nascimento","email":"bruno@example.com"}'
 ```
 
 ### Listar usuários
+
 ```bash
 curl http://localhost:3000/users
 ```
 
 ### Criar pedido (valida usuário síncrono e publica `order.created`)
+
 ```bash
 # Troque <userId> pelo id retornado na criação do usuário (ex.: "u_1")
 curl -X POST http://localhost:3000/orders \  -H "Content-Type: application/json" \  -d '{"userId":"u_1","items":[{"sku":"BOOK-123","qty":2}], "total": 120.50}'
 ```
 
 ### Listar pedidos
+
 ```bash
 curl http://localhost:3000/orders
 ```
 
 Verifique os logs do **Orders Service** para ver consumo de eventos `user.created` e cache sendo populado.
+
+---
+
+## Documentação API (Swagger)
+
+A documentação OpenAPI/Swagger está disponível **diretamente em cada microserviço**:
+
+- **Users Service**: http://localhost:3001/docs
+- **Orders Service**: http://localhost:3002/docs
+- **Gateway** (agregado): http://localhost:3000/docs
+
+Cada serviço expõe sua própria documentação interativa com Swagger UI, permitindo testar os endpoints diretamente.
 
 ---
 
@@ -103,7 +121,6 @@ microservices-node-lesson/
 4. **Idempotência** (ex.: não reprocessar `user.created` duas vezes — demo simplificado com cache).
 5. **Observabilidade** (logs claros) e **Contrato de APIs** (rotas REST e payloads JSON).
 
-
 ---
 
 ## Conceitos didáticos demonstrados
@@ -121,12 +138,10 @@ microservices-node-lesson/
 ## Exercícios
 
 - Implementar `order.cancelled` e `user.updated`.
-- Adicionar **persistência** (SQLite/Postgres via Prisma) por serviço => Persistência com Prisma + SQLite/Postgres por serviço.
+- Adicionar **persistência** (SQLite/Postgres via Prisma) por serviço => Persistência com Prisma + SQLite/Postgres por serviço. ✅
 - Criar **testes** (Jest/supertest) por serviço => Testes com Jest + supertest.
-- Adicionar **retry com backoff** para conexões AMQP/HTTP => Retries com backoff para AMQP/HTTP.
+- Adicionar **retry com backoff** para conexões AMQP/HTTP => Retries com backoff para AMQP/HTTP. ✅
 - Incluir **circuit breaker** (p.ex. opossum) no Orders → Users => Circuit breaker (ex.: opossum) no Orders → Users.
-- Expor **OpenAPI** (swagger-ui-express) => Swagger/OpenAPI no Users e Orders.
-
-
+- Expor **OpenAPI** (swagger-ui-express) => Swagger/OpenAPI no Users e Orders. ✅
 
 Bom estudo! 🚀

@@ -1,9 +1,9 @@
 const swaggerSpec = {
   openapi: "3.0.3",
   info: {
-    title: "Users Service",
+    title: "Users Service API",
     version: "1.0.0",
-    description: "Microserviço para gerenciamento de usuários",
+    description: "Microserviço de gerenciamento de usuários",
   },
   servers: [
     {
@@ -15,7 +15,8 @@ const swaggerSpec = {
     "/health": {
       get: {
         summary: "Healthcheck",
-        description: "Verifica se o serviço está funcionando",
+        description:
+          "Verifica se o serviço e o banco de dados estão funcionando",
         tags: ["Health"],
         responses: {
           200: {
@@ -27,10 +28,14 @@ const swaggerSpec = {
                   properties: {
                     ok: { type: "boolean" },
                     service: { type: "string" },
+                    db: { type: "string" },
                   },
                 },
               },
             },
+          },
+          503: {
+            description: "Serviço indisponível",
           },
         },
       },
@@ -38,7 +43,7 @@ const swaggerSpec = {
     "/": {
       get: {
         summary: "Listar usuários",
-        description: "Retorna todos os usuários cadastrados",
+        description: "Retorna a lista de todos os usuários cadastrados",
         tags: ["Users"],
         responses: {
           200: {
@@ -47,16 +52,28 @@ const swaggerSpec = {
               "application/json": {
                 schema: {
                   type: "array",
-                  items: { $ref: "#/components/schemas/User" },
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: { type: "string", example: "u_abc123" },
+                      name: { type: "string", example: "João Silva" },
+                      email: { type: "string", example: "joao@exemplo.com" },
+                      createdAt: { type: "string", format: "date-time" },
+                    },
+                  },
                 },
               },
             },
+          },
+          500: {
+            description: "Erro interno",
           },
         },
       },
       post: {
         summary: "Criar usuário",
-        description: "Cria um novo usuário no sistema",
+        description:
+          "Cria um novo usuário e publica evento user.created no RabbitMQ",
         tags: ["Users"],
         requestBody: {
           required: true,
@@ -66,15 +83,10 @@ const swaggerSpec = {
                 type: "object",
                 required: ["name", "email"],
                 properties: {
-                  name: {
-                    type: "string",
-                    description: "Nome do usuário",
-                    example: "João Silva",
-                  },
+                  name: { type: "string", example: "João Silva" },
                   email: {
                     type: "string",
                     format: "email",
-                    description: "Email do usuário",
                     example: "joao@exemplo.com",
                   },
                 },
@@ -87,12 +99,20 @@ const swaggerSpec = {
             description: "Usuário criado com sucesso",
             content: {
               "application/json": {
-                schema: { $ref: "#/components/schemas/User" },
+                schema: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string", example: "u_abc123" },
+                    name: { type: "string", example: "João Silva" },
+                    email: { type: "string", example: "joao@exemplo.com" },
+                    createdAt: { type: "string", format: "date-time" },
+                  },
+                },
               },
             },
           },
           400: {
-            description: "Dados inválidos",
+            description: "Dados inválidos ou email já existe",
             content: {
               "application/json": {
                 schema: {
@@ -104,21 +124,24 @@ const swaggerSpec = {
               },
             },
           },
+          500: {
+            description: "Erro interno",
+          },
         },
       },
     },
     "/{id}": {
       get: {
         summary: "Buscar usuário por ID",
-        description: "Retorna um usuário específico pelo seu ID",
+        description: "Retorna os dados de um usuário específico",
         tags: ["Users"],
         parameters: [
           {
             name: "id",
             in: "path",
             required: true,
-            description: "ID único do usuário",
             schema: { type: "string" },
+            description: "ID do usuário",
             example: "u_abc123",
           },
         ],
@@ -127,7 +150,15 @@ const swaggerSpec = {
             description: "Usuário encontrado",
             content: {
               "application/json": {
-                schema: { $ref: "#/components/schemas/User" },
+                schema: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string", example: "u_abc123" },
+                    name: { type: "string", example: "João Silva" },
+                    email: { type: "string", example: "joao@exemplo.com" },
+                    createdAt: { type: "string", format: "date-time" },
+                  },
+                },
               },
             },
           },
@@ -138,45 +169,16 @@ const swaggerSpec = {
                 schema: {
                   type: "object",
                   properties: {
-                    error: { type: "string" },
+                    error: { type: "string", example: "not found" },
                   },
                 },
               },
             },
           },
-        },
-      },
-    },
-  },
-  components: {
-    schemas: {
-      User: {
-        type: "object",
-        properties: {
-          id: {
-            type: "string",
-            description: "ID único do usuário",
-            example: "u_abc123",
-          },
-          name: {
-            type: "string",
-            description: "Nome do usuário",
-            example: "João Silva",
-          },
-          email: {
-            type: "string",
-            format: "email",
-            description: "Email do usuário",
-            example: "joao@exemplo.com",
-          },
-          createdAt: {
-            type: "string",
-            format: "date-time",
-            description: "Data de criação do usuário",
-            example: "2025-10-13T10:30:00.000Z",
+          500: {
+            description: "Erro interno",
           },
         },
-        required: ["id", "name", "email", "createdAt"],
       },
     },
   },
@@ -187,7 +189,7 @@ const swaggerSpec = {
     },
     {
       name: "Users",
-      description: "Operações relacionadas aos usuários",
+      description: "Operações de gerenciamento de usuários",
     },
   ],
 };
