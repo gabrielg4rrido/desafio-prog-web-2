@@ -26,6 +26,8 @@ const EXCHANGE = process.env.EXCHANGE || "app.topic";
 const QUEUE = process.env.QUEUE || "orders.q";
 const ROUTING_KEY_USER_CREATED =
   process.env.ROUTING_KEY_USER_CREATED || ROUTING_KEYS.USER_CREATED;
+const ROUTING_KEY_USER_UPDATED =
+  process.env.ROUTING_KEY_USER_UPDATED || ROUTING_KEYS.USER_UPDATED;
 
 // In-memory cache de usuários (preenchido por eventos)
 const userCache = new Map();
@@ -43,17 +45,20 @@ let amqp = null;
     amqp = await createChannel(RABBITMQ_URL, EXCHANGE);
     console.log("[orders] AMQP connected");
 
-    // Bind de fila para consumir eventos user.created
+    // Bind de fila para consumir eventos user.created e user.updated
     await amqp.ch.assertQueue(QUEUE, { durable: true });
     await amqp.ch.bindQueue(QUEUE, EXCHANGE, ROUTING_KEY_USER_CREATED);
+    await amqp.ch.bindQueue(QUEUE, EXCHANGE, ROUTING_KEY_USER_UPDATED);
 
     amqp.ch.consume(QUEUE, (msg) => {
       if (!msg) return;
       try {
         const user = JSON.parse(msg.content.toString());
+        const routingKey = msg.fields.routingKey;
+
         // idempotência simples: atualiza/define
         userCache.set(user.id, user);
-        console.log("[orders] consumed event user.created -> cached", user.id);
+        console.log(`[orders] consumed event ${routingKey} -> cached`, user.id);
         amqp.ch.ack(msg);
       } catch (err) {
         console.error("[orders] consume error:", err.message);

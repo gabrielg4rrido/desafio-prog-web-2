@@ -107,6 +107,55 @@ app.get("/:id", async (req, res) => {
   }
 });
 
+app.patch("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, email } = req.body || {};
+
+  if (!name && !email) {
+    return res.status(400).json({ error: "name or email is required" });
+  }
+
+  try {
+    const existingUser = await prisma.user.findUnique({ where: { id } });
+    if (!existingUser) {
+      return res.status(404).json({ error: "user not found" });
+    }
+
+    const dataToUpdate = {};
+    if (name) dataToUpdate.name = name;
+    if (email) dataToUpdate.email = email;
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: dataToUpdate,
+    });
+
+    try {
+      if (amqp?.ch) {
+        const payload = Buffer.from(JSON.stringify(updated));
+        amqp.ch.publish(EXCHANGE, ROUTING_KEYS.USER_UPDATED, payload, {
+          persistent: true,
+        });
+        console.log(
+          "[users] published event:",
+          ROUTING_KEYS.USER_UPDATED,
+          updated.id
+        );
+      }
+    } catch (err) {
+      console.error("[users] publish error:", err.message);
+    }
+
+    res.json(updated);
+  } catch (e) {
+    if (e.code === "P2002") {
+      return res.status(400).json({ error: "email already exists" });
+    }
+    console.error("[users] update error:", e.message);
+    res.status(500).json({ error: "internal" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`[users] listening on http://localhost:${PORT}`);
   console.log(`[users] swagger -> http://localhost:${PORT}/docs`);
