@@ -3,7 +3,8 @@ const swaggerSpec = {
   info: {
     title: "API Gateway",
     version: "1.0.0",
-    description: "Gateway de API para agregação dos microserviços. Para documentação completa dos serviços, acesse:\n- Users Service: http://localhost:3001/docs\n- Orders Service: http://localhost:3002/docs",
+    description:
+      "Gateway de API para agregação dos microserviços. Para documentação completa dos serviços, acesse:\n- Users Service: http://localhost:3001/docs\n- Orders Service: http://localhost:3002/docs",
   },
   servers: [
     {
