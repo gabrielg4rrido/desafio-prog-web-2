@@ -49,6 +49,15 @@ Aguarde os containers subirem. A UI do RabbitMQ estará em: http://localhost:156
 curl -X POST http://localhost:3000/users \  -H "Content-Type: application/json" \  -d '{"name":"Bruno Nascimento","email":"bruno@example.com"}'
 ```
 
+### Atualizar usuário (publica `user.updated`)
+
+```bash
+# Troque <userId> pelo id retornado na criação do usuário (ex.: "u_abc123")
+curl -X PATCH http://localhost:3000/users/<userId> \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Bruno Silva","email":"bruno.silva@example.com"}'
+```
+
 ### Listar usuários
 
 ```bash
@@ -60,6 +69,13 @@ curl http://localhost:3000/users
 ```bash
 # Troque <userId> pelo id retornado na criação do usuário (ex.: "u_1")
 curl -X POST http://localhost:3000/orders \  -H "Content-Type: application/json" \  -d '{"userId":"u_1","items":[{"sku":"BOOK-123","qty":2}], "total": 120.50}'
+```
+
+### Cancelar pedido (publica `order.cancelled`)
+
+```bash
+# Troque <orderId> pelo id retornado na criação do pedido (ex.: "o_abc123")
+curl -X PATCH http://localhost:3000/orders/<orderId>/cancel
 ```
 
 ### Listar pedidos
@@ -133,15 +149,4 @@ microservices-node-lesson/
 
 - Isolamento por serviço: cada app com seu Dockerfile e variáveis de ambiente.
 
----
-
-## Exercícios
-
-- Implementar `order.cancelled` e `user.updated`.
-- Adicionar **persistência** (SQLite/Postgres via Prisma) por serviço => Persistência com Prisma + SQLite/Postgres por serviço. ✅
-- Criar **testes** (Jest/supertest) por serviço => Testes com Jest + supertest.
-- Adicionar **retry com backoff** para conexões AMQP/HTTP => Retries com backoff para AMQP/HTTP. ✅
-- Incluir **circuit breaker** (p.ex. opossum) no Orders → Users => Circuit breaker (ex.: opossum) no Orders → Users.
-- Expor **OpenAPI** (swagger-ui-express) => Swagger/OpenAPI no Users e Orders. ✅
-
-Bom estudo! 🚀
+- Eventos de cancelamento: order.cancelled é publicado e consumido pelo Users Service (exemplo didático).

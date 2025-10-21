@@ -180,6 +180,98 @@ const swaggerSpec = {
           },
         },
       },
+      patch: {
+        summary: "Atualizar usuário",
+        description:
+          "Atualiza os dados de um usuário existente e publica evento user.updated no RabbitMQ",
+        tags: ["Users"],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            description: "ID do usuário a ser atualizado",
+            schema: {
+              type: "string",
+              example: "u_abc123",
+            },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  name: {
+                    type: "string",
+                    example: "João Silva Atualizado",
+                    description: "Novo nome do usuário (opcional)",
+                  },
+                  email: {
+                    type: "string",
+                    format: "email",
+                    example: "joao.novo@exemplo.com",
+                    description: "Novo email do usuário (opcional)",
+                  },
+                },
+                minProperties: 1,
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Usuário atualizado com sucesso",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string", example: "u_abc123" },
+                    name: { type: "string", example: "João Silva Atualizado" },
+                    email: {
+                      type: "string",
+                      example: "joao.novo@exemplo.com",
+                    },
+                    createdAt: { type: "string", format: "date-time" },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "Dados inválidos ou email já existe",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          404: {
+            description: "Usuário não encontrado",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          500: {
+            description: "Erro interno",
+          },
+        },
+      },
     },
   },
   tags: [
